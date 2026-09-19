@@ -1,52 +1,56 @@
-//testbench for the comparator in task3
+// tb.v
+// Self-checking testbench for comp2.v
+// Checks that exactly one of GT, LT, EQ is 1 for every (A,B) combination.
 
 module tb;
 
-reg [1:0] A;
-reg [1:0] B;
+  reg  [1:0] t_a, t_b;
+  wire       t_gt, t_lt, t_eq;
 
-wire GT;
-wire LT;
-wire EQ;
+  integer i, j;
+  integer errors = 0;
 
-comp2 DUT(
-    .A(A),
-    .B(B),
-    .GT(GT),
-    .LT(LT),
-    .EQ(EQ)
-);
+  comp2 DUT (
+    .A  (t_a),
+    .B  (t_b),
+    .GT (t_gt),
+    .LT (t_lt),
+    .EQ (t_eq)
+  );
 
-string vcd_file;
- initial begin
-   if ($value$plusargs("vcd=%s", vcd_file)) begin
-     $dumpfile(vcd_file);
-     $dumpvars(0, DUT);
-   end
- end
+  string vcd_file;
+  initial begin
+    if ($value$plusargs("vcd=%s", vcd_file)) begin
+      $dumpfile(vcd_file);
+      $dumpvars(0, DUT);
+    end
+  end
 
-initial begin
-    A = 2'b00; B = 2'b00; #5;
-    A = 2'b00; B = 2'b01; #5;
-    A = 2'b00; B = 2'b10; #5;
-    A = 2'b00; B = 2'b11; #5;
-    A = 2'b01; B = 2'b00; #5;
-    A = 2'b01; B = 2'b01; #5;
-    A = 2'b01; B = 2'b10; #5;
-    A = 2'b01; B = 2'b11; #5;
-    A = 2'b10; B = 2'b00; #5;
-    A = 2'b10; B = 2'b01; #5;
-    A = 2'b10; B = 2'b10; #5;
-    A = 2'b10; B = 2'b11; #5;
-    A = 2'b11; B = 2'b00; #5;
-    A = 2'b11; B = 2'b01; #5;
-    A = 2'b11; B = 2'b10; #5;
-    A = 2'b11; B = 2'b11; #5;
+  initial begin
+    for (i = 0; i < 4; i = i + 1) begin
+      for (j = 0; j < 4; j = j + 1) begin
+        t_a = i;
+        t_b = j;
+        #10;
 
-end
+        // Exactly one of GT, LT, EQ must be 1
+        if ((t_gt + t_lt + t_eq) != 1) begin
+          $display("MISMATCH at time %0t: A=%0d B=%0d GT=%b LT=%b EQ=%b (sum=%0d, expected exactly 1)",
+                    $time, t_a, t_b, t_gt, t_lt, t_eq, t_gt + t_lt + t_eq);
+          errors = errors + 1;
+        end
+      end
+    end
 
-initial begin
-    $monitor($time, " A=%b B=%b | GT=%b LT=%b EQ=%b ", A,B,GT,LT,EQ);
-end
+    if (errors == 0)
+      $display("ALL TESTS PASSED");
+    else
+      $display("%0d MISMATCH(ES) FOUND", errors);
+
+    $finish;
+  end
+
+  initial
+    $monitor($time, " A=%b B=%b | GT=%b LT=%b EQ=%b", t_a, t_b, t_gt, t_lt, t_eq);
 
 endmodule
