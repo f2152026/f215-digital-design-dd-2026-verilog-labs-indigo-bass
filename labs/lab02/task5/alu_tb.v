@@ -1,19 +1,21 @@
-module alu_tb;
+module tb;
 
-reg [3:0]a;
-reg [3:0]b;
-reg op;
+  reg  [3:0] t_a, t_b;
+  reg        t_op;
+  wire [3:0] t_result;
 
-wire [3:0]result;
+  reg  [3:0] expected;
+  integer i, j, k;
+  integer errors = 0;
 
-alu DUT(
-    .a(a),
-    .b(b),
-    .op(op),
-    .result(result)
-);
+  alu DUT (
+    .a      (t_a),
+    .b      (t_b),
+    .op     (t_op),
+    .result (t_result)
+  );
 
-string vcd_file;
+  string vcd_file;
   initial begin
     if ($value$plusargs("vcd=%s", vcd_file)) begin
       $dumpfile(vcd_file);
@@ -21,16 +23,32 @@ string vcd_file;
     end
   end
 
-initial begin
-    a = 4'd5; b = 4'd3; op = 1'b0; #10; //supposed to print 8
-    op = 1'b1; #10; // since a and b are the same therefore it shall print 2
-    a = 4'd9; b = 4'd4; op = 1'b1; #10; // changing a,b and op so 9-4 =5
-    a = 4'd3; b = 4'd7; op = 1'b1; #10;// again changing a and b for a negative outpt 3-7 = -4 
+  initial begin
+    for (k = 0; k < 2; k = k + 1) begin
+      for (i = 0; i < 16; i = i + 1) begin
+        for (j = 0; j < 16; j = j + 1) begin
+          t_op = k[0];
+          t_a  = i;
+          t_b  = j;
+          #10;
 
- end
+          expected = (k == 0) ? (i + j) : (i - j);
 
-initial begin
-    $monitor($time, " a=%0d b=%0d op=%b | result=%0d (binary: %b)", 
-             a, b, op, result, result);
+          if (t_result !== expected) begin
+            $display("MISMATCH t=%0t: op=%b a=%0d b=%0d | result=%0d expected=%0d",
+                      $time, t_op, t_a, t_b, t_result, expected);
+            errors = errors + 1;
+          end
+        end
+      end
+    end
+
+    if (errors == 0)
+      $display("ALL TESTS PASSED");
+    else
+      $display("%0d MISMATCH(ES) FOUND", errors);
+
+    $finish;
   end
+
 endmodule
